@@ -1,17 +1,21 @@
 import ballerina/http;
+import agri_backend.store;
 
-# A service representing a network-accessible API
-# bound to port `9090`.
+// Initialize the database client
+store:Client dbClient = check new ();
+
 service / on new http:Listener(9090) {
-
-    # A resource for generating greetings
-    # + name - name as a string or nil
-    # + return - string name with hello message or error
+    // Your existing greeting resource
     resource function get greeting(string? name) returns string|error {
-        // Send a response back to the caller.
         if name is () {
             return error("name should not be empty!");
         }
         return string `Hello, ${name}`;
+    }
+    
+    // Add a simple endpoint that uses the database
+    resource function get users() returns store:User[]|error {
+        stream<store:User, error?> userStream = dbClient->/users;
+        return from store:User user in userStream select user;
     }
 }
