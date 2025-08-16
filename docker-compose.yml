@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: agricultural_db
+    environment:
+      POSTGRES_DB: agricultural_export_db
+      POSTGRES_USER: agricultural_user
+      POSTGRES_PASSWORD: agricultural_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # No init.sql needed - Ballerina persist will handle schema creation
+    networks:
+      - agricultural_network
+
+  # Redis for session management (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: agricultural_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - agricultural_network
+
+  # Backend service (optional - for production deployment)
+  # backend:
+  #   build: ./backend
+  #   container_name: agricultural_backend
+  #   ports:
+  #     - "9090:9090"
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - agricultural_network
+
+  # Frontend service (optional - for production deployment)  
+  # frontend:
+  #   build: ./frontend
+  #   container_name: agricultural_frontend
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - agricultural_network
+
+volumes:
+  postgres_data:
+
+networks:
+  agricultural_network:
+    driver: bridge
+    
