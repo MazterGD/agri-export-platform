@@ -1,21 +1,75 @@
 import ballerina/http;
 import agri_backend.store;
+import agri_backend.auth;
+import agri_backend.services;
+import ballerina/time;
 
 // Initialize the database client
 store:Client dbClient = check new ();
 
-service / on new http:Listener(9090) {
-    // Your existing greeting resource
-    resource function get greeting(string? name) returns string|error {
-        if name is () {
-            return error("name should not be empty!");
+// Initialize auth service
+auth:AuthService authService = new(dbClient);
+
+// Initialize business services
+services:UserService userService = new(dbClient);
+services:CropService cropService = new(dbClient);
+
+@http:ServiceConfig {
+    auth: [
+        {
+            jwtValidatorConfig: auth:jwtConfig,
+            scopes: ["admin", "farmer", "buyer_agent"]
         }
-        return string `Hello, ${name}`;
+    ],
+    cors: {
+        allowOrigins: ["http://localhost:3000", "https://yourapp.com"],
+        allowCredentials: false,
+        allowHeaders: ["Authorization", "Content-Type"],
+        allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     }
-    
-    // Add a simple endpoint that uses the database
-    resource function get users() returns store:User[]|error {
-        stream<store:User, error?> userStream = dbClient->/users;
-        return from store:User user in userStream select user;
+}
+service /api/v1 on new http:Listener(9090) {
+    resource function get health() returns json {
+        return {
+            "status": "UP", 
+            "timestamp": time:utcNow().toString(),
+            "service": "Agricultural Export Platform API"
+        };
+    }
+
+    resource function get profile(http:RequestContext ctx) returns json|error {
+        auth:AuthContext authContext = check authService.getAuthContext(ctx);
+        return userService.getUserProfile(authContext);
+    }
+
+    resource function get admin/users(http:RequestContext ctx) returns json[]|error {
+        auth:AuthContext authContext = check authService.getAuthContext(ctx);
+        
+        if !authService.hasRole(authContext, "admin") {
+            return error("Insufficient permissions");
+        }
+        
+        return userService.getAllUsers();
+    }
+
+    resource function get crops(http:RequestContext ctx) returns json[]|error {
+        auth:AuthContext authContext = check authService.getAuthContext(ctx);
+        
+        if !authService.hasAnyRole(authContext, ["admin", "farmer", "buyer_agent"]) {
+            return error("Insufficient permissions");
+        }
+        
+        return cropService.getCrops(authContext);
+    }
+
+    resource function post crops(@http:Payload services:CropCreateRequest request,
+                               http:RequestContext ctx) returns json|error {
+        auth:AuthContext authContext = check authService.getAuthContext(ctx);
+        
+        if !authService.hasAnyRole(authContext, ["admin", "farmer"]) {
+            return error("Insufficient permissions");
+        }
+        
+        return cropService.createCrop(request, authContext);
     }
 }

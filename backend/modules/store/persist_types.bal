@@ -47,6 +47,9 @@ public type User record {|
     UserStatus status;
     time:Civil createdAt;
     time:Civil updatedAt;
+    string? asgardeoUserId;
+    time:Civil? lastLogin;
+    int loginCount;
 
 |};
 
@@ -58,6 +61,9 @@ public type UserOptionalized record {|
     UserStatus status?;
     time:Civil createdAt?;
     time:Civil updatedAt?;
+    string? asgardeoUserId?;
+    time:Civil? lastLogin?;
+    int loginCount?;
 |};
 
 public type UserWithRelations record {|
@@ -77,6 +83,9 @@ public type UserUpdate record {|
     UserStatus status?;
     time:Civil createdAt?;
     time:Civil updatedAt?;
+    string? asgardeoUserId?;
+    time:Civil? lastLogin?;
+    int loginCount?;
 |};
 
 public type Farmer record {|

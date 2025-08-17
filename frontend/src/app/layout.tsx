@@ -6,6 +6,7 @@ import '@mantine/carousel/styles.css';
 
 import { ColorSchemeScript, MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import { SessionProvider } from "next-auth/react";
 
 export const metadata = {
   title: 'Agricultural Export Platform',
@@ -24,8 +25,10 @@ export default function RootLayout({
       </head>
       <body>
         <MantineProvider>
-          <Notifications />
-          {children}
+          <SessionProvider>
+            <Notifications />
+            {children}
+          </SessionProvider>
         </MantineProvider>
       </body>
     </html>

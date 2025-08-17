@@ -2,22 +2,25 @@ import ballerina/persist as _;
 import ballerina/time;
 import ballerinax/persist.sql;
 
-# User entity for the agricultural export platform.
+# User entity representing platform users
 #
-# + id - user id (Primary Key)
-# + email - user email address (unique)
-# + passwordHash - hashed password for authentication
-# + role - user role (admin, farmer, buyer_agent)
-# + status - user account status (pending, active, suspended)
-# + createdAt - user account creation timestamp
-# + updatedAt - user account last update timestamp
-# + farmer - relation to farmer profile if user is a farmer
-# + buyerAgent - relation to buyer agent profile if user is a buyer agent
+# + id - Unique identifier for the user (UUID)
+# + email - User's email address used for authentication and communication
+# + passwordHash - Hashed password for local users (null for Asgardeo authenticated users)
+# + role - User's role in the system (admin, farmer, or buyer_agent)
+# + status - Current account status (pending, active, or suspended)
+# + createdAt - Timestamp when the user account was created
+# + updatedAt - Timestamp when the user account was last updated
+# + asgardeoUserId - Unique identifier from Asgardeo authentication provider
+# + lastLogin - Timestamp of the user's last successful login
+# + loginCount - Number of times the user has logged into the system
+# + farmer - Associated farmer profile if the user is a farmer
+# + buyerAgent - Associated buyer agent profile if the user is a buyer agent
 public type User record {|
     readonly string id;
     string email;
     @sql:Name {value: "password_hash"}
-    string? passwordHash;
+    string? passwordHash; // null for Asgardeo users
     UserRole role;
     UserStatus status;
     @sql:Name {value: "created_at"}
@@ -25,24 +28,32 @@ public type User record {|
     @sql:Name {value: "updated_at"}
     time:Civil updatedAt;
     
+    // Authentication fields
+    @sql:Name {value: "asgardeo_user_id"}
+    string? asgardeoUserId;
+    @sql:Name {value: "last_login"}
+    time:Civil? lastLogin;
+    @sql:Name {value: "login_count"}
+    int loginCount;
+    
     // Relations
     Farmer? farmer;
     BuyerAgent? buyerAgent;
 |};
 
-# Farmer entity for agricultural producers.
+# Farmer entity representing agricultural producers
 #
-# + id - farmer id (Primary Key)
-# + firstName - farmer's first name
-# + lastName - farmer's last name
-# + phone - farmer's contact phone number
-# + address - farmer's residential address
-# + farmLocation - location of the farm
-# + farmSize - size of the farm in acres/hectares
-# + verificationStatus - farmer verification status by admin
-# + createdAt - farmer profile creation timestamp
-# + user - relation to user account
-# + crops - relation to crops listed by this farmer
+# + id - Unique identifier for the farmer (UUID)
+# + firstName - Farmer's first name
+# + lastName - Farmer's last name
+# + phone - Contact phone number
+# + address - Physical address of the farmer
+# + farmLocation - Geographic location of the farm
+# + farmSize - Size of the farm in hectares
+# + verificationStatus - Account verification status (pending, verified, rejected)
+# + createdAt - Timestamp when the farmer profile was created
+# + user - Associated user account
+# + crops - List of crops owned by this farmer
 public type Farmer record {|
     readonly string id;
     @sql:Name {value: "first_name"}
@@ -65,17 +76,17 @@ public type Farmer record {|
     Crop[] crops;
 |};
 
-# Buyer Agent entity for export company representatives.
+# Buyer Agent entity representing export company representatives
 #
-# + id - buyer agent id (Primary Key)
-# + companyName - name of the export company
-# + contactPerson - primary contact person name
-# + phone - company contact phone number
-# + businessLicense - business license number or identifier
-# + verificationStatus - buyer agent verification status by admin
-# + createdAt - buyer agent profile creation timestamp
-# + user - relation to user account
-# + orders - relation to orders placed by this buyer agent
+# + id - Unique identifier for the buyer agent (UUID)
+# + companyName - Name of the export company
+# + contactPerson - Primary contact person at the company
+# + phone - Business contact phone number
+# + businessLicense - License number for the export business
+# + verificationStatus - Account verification status (pending, verified, rejected)
+# + createdAt - Timestamp when the buyer agent profile was created
+# + user - Associated user account
+# + orders - List of orders placed by this buyer agent
 public type BuyerAgent record {|
     readonly string id;
     @sql:Name {value: "company_name"}
@@ -95,22 +106,22 @@ public type BuyerAgent record {|
     Order[] orders;
 |};
 
-# Crop entity for agricultural products listed for export.
+# Crop entity representing agricultural products for export
 #
-# + id - crop id (Primary Key)
-# + cropType - type of crop (rice, wheat, vegetables, etc.)
-# + variety - specific variety of the crop
-# + grade - quality grade of the crop (A, B, C, etc.)
-# + quantity - available quantity for sale
-# + unit - unit of measurement (kg, tons, bags, etc.)
-# + pricePerUnit - price per unit in local currency
-# + harvestDate - date when the crop was harvested
-# + expiryDate - expiry or best before date
-# + description - detailed description of the crop
-# + status - crop availability status
-# + createdAt - crop listing creation timestamp
-# + farmer - relation to the farmer who listed this crop
-# + orderItems - relation to order items containing this crop
+# + id - Unique identifier for the crop listing (UUID)
+# + cropType - Type of crop (e.g., Coffee, Tea, Spices)
+# + variety - Specific variety of the crop
+# + grade - Quality grade classification
+# + quantity - Available quantity for sale
+# + unit - Measurement unit (kg, lbs, bags)
+# + pricePerUnit - Selling price per unit
+# + harvestDate - Date when the crop was harvested
+# + expiryDate - Best before/expiration date
+# + description - Additional details about the crop
+# + status - Current availability status (available, reserved, sold, expired)
+# + createdAt - Timestamp when the crop was listed
+# + farmer - Farmer who owns/produces this crop
+# + orderItems - Order items associated with this crop
 public type Crop record {|
     readonly string id;
     @sql:Name {value: "crop_type"}
@@ -135,15 +146,15 @@ public type Crop record {|
     OrderItem[] orderItems;
 |};
 
-# Order entity for purchase orders from buyer agents.
+# Order entity representing purchase transactions
 #
-# + id - order id (Primary Key)
-# + totalAmount - total amount for the entire order
-# + status - current status of the order
-# + createdAt - order creation timestamp
-# + updatedAt - order last update timestamp
-# + buyerAgent - relation to the buyer agent who placed this order
-# + orderItems - relation to items included in this order
+# + id - Unique identifier for the order (UUID)
+# + totalAmount - Total value of the order
+# + status - Current order status (pending, confirmed, in_progress, shipped, delivered, cancelled)
+# + createdAt - Timestamp when the order was created
+# + updatedAt - Timestamp when the order was last updated
+# + buyerAgent - Buyer agent who placed the order
+# + orderItems - Individual items included in this order
 public type Order record {|
     readonly string id;
     @sql:Name {value: "total_amount"}
@@ -159,14 +170,14 @@ public type Order record {|
     OrderItem[] orderItems;
 |};
 
-# Order Item entity for individual items within an order.
+# Order Item entity representing individual products in an order
 #
-# + id - order item id (Primary Key)
-# + quantity - quantity of the crop ordered
-# + unitPrice - price per unit at the time of order
-# + totalPrice - total price for this line item
-# + order - relation to the parent order
-# + crop - relation to the crop being ordered
+# + id - Unique identifier for the order item (UUID)
+# + quantity - Quantity of the crop ordered
+# + unitPrice - Price per unit at time of order
+# + totalPrice - Total price for this item (quantity × unitPrice)
+# + 'order - Parent order containing this item
+# + crop - Crop being ordered
 public type OrderItem record {|
     readonly string id;
     decimal quantity;
@@ -180,28 +191,41 @@ public type OrderItem record {|
     Crop crop;
 |};
 
-# User role enumeration.
+# User role enumeration
+# + ADMIN - Platform administrator with full privileges
+# + FARM_USER - Agricultural producer who lists crops for sale
+# + BUYER_USER - Export company representative who purchases crops
 public enum UserRole {
     ADMIN = "admin",
     FARM_USER = "farmer",
     BUYER_USER = "buyer_agent"
 }
 
-# User account status enumeration.
+# User account status enumeration
+# + PENDING - New account awaiting activation
+# + ACTIVE - Active and enabled account
+# + SUSPENDED - Temporarily disabled account
 public enum UserStatus {
     PENDING = "pending",
     ACTIVE = "active",
     SUSPENDED = "suspended"
 }
 
-# Verification status enumeration for farmers and buyer agents.
+# Verification status enumeration
+# + PENDING - Submitted documents awaiting review
+# + VERIFIED - Successfully verified account
+# + REJECTED - Verification failed or documents rejected
 public enum VerificationStatus {
     PENDING = "pending",
     VERIFIED = "verified",
     REJECTED = "rejected"
 }
 
-# Crop availability status enumeration.
+# Crop availability status enumeration
+# + AVAILABLE - Actively listed for sale
+# + RESERVED - Temporarily reserved in an order
+# + SOLD - Successfully sold and delivered
+# + EXPIRED - No longer available for sale
 public enum CropStatus {
     AVAILABLE = "available",
     RESERVED = "reserved",
@@ -209,7 +233,13 @@ public enum CropStatus {
     EXPIRED = "expired"
 }
 
-# Order status enumeration.
+# Order lifecycle status enumeration
+# + PENDING - New order awaiting confirmation
+# + CONFIRMED - Validated and accepted order
+# + IN_PROGRESS - Being processed and prepared for shipment
+# + SHIPPED - Dispatched to buyer
+# + DELIVERED - Successfully received by buyer
+# + CANCELLED - Canceled by buyer or seller
 public enum OrderStatus {
     PENDING = "pending",
     CONFIRMED = "confirmed",

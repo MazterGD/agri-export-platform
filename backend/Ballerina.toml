@@ -12,4 +12,12 @@ groupId = "io.ballerina.stdlib"
 artifactId = "persist.sql-native"
 version = "1.6.0"
 
+[[dependency]]
+org = "ballerina"
+name = "jwt"
+version = "2.15.0"
 
+[[dependency]]
+org = "ballerina"
+name = "cache"
+version = "3.10.0"

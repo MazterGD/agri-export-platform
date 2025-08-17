@@ -18,6 +18,9 @@ CREATE TABLE "User" (
 	"status" VARCHAR(9) CHECK ("status" IN ('pending', 'active', 'suspended')) NOT NULL,
 	"created_at" TIMESTAMP NOT NULL,
 	"updated_at" TIMESTAMP NOT NULL,
+	"asgardeo_user_id" VARCHAR(191),
+	"last_login" TIMESTAMP,
+	"login_count" INT NOT NULL,
 	PRIMARY KEY("id")
 );
 
